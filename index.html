@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vies d'Escalada - El príncep de les maduixes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="glow-container">
+        <header>
+            <div class="follow-us">
+                <a href="https://www.instagram.com/elprincepdelesmaduixes/" target="_blank" title="Instagram"><i
+                        class="fa-brands fa-instagram"></i></a>
+                <a href="https://elprincepdelesmaduixes.blogspot.com/" target="_blank" title="Blog"><i
+                        class="fa-brands fa-blogger"></i></a>
+            </div>
+            <h1>el príncep de les maduixes </h1>
+            <p class="subtitle">Llistat de vies d'escalada</p>
+        </header>
+
+        <main>
+            <div id="loading" class="status-msg">Carregant vies...</div>
+            <div id="error" class="status-msg error" style="display: none;">Error carregant les dades.</div>
+
+            <div class="sort-controls">
+                <label for="mobile-sort">Ordenar per:</label>
+                <select id="mobile-sort">
+                    <option value="0-desc">Nº ↓</option>
+                    <option value="0-asc">Nº ↑</option>
+                    <option value="1-asc">Nom A-Z</option>
+                    <option value="1-desc">Nom Z-A</option>
+                    <option value="2-asc">Grau ↑</option>
+                    <option value="2-desc">Grau ↓</option>
+                    <option value="6-desc">Data recent</option>
+                    <option value="6-asc">Data antiga</option>
+                </select>
+                <button id="search-toggle" class="icon-btn" title="Cerca"><i
+                        class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+
+            <div class="search-wrapper" id="search-wrapper">
+                <input type="text" id="search-input" placeholder="Cerca via, grau, paret, zona...">
+            </div>
+
+            <div class="table-wrapper">
+                <table id="vies-table">
+                    <thead>
+                        <tr>
+                            <th>Nº</th>
+                            <th>Nom</th>
+                            <th>Grau</th>
+                            <th>Metres</th>
+                            <th>Agulla/Paret</th>
+                            <th>Zona</th>
+                            <th>Data</th>
+                            <th>Enllaç</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vies-body">
+                        <!-- Les dades es carregaran aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; <span id="current-year"></span> <a href="https://elprincepdelesmaduixes.blogspot.com/"
+                    target="_blank">El príncep de les maduixes</a></p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

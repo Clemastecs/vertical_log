@@ -1,0 +1,424 @@
+:root {
+    --bg-color: #f7f7f7;
+    --content-bg: #ffffff;
+    --text-main: #57595B;
+    --text-muted: #888;
+    --accent-blue: #a3d8f4;
+    /* Muted blue for the glow */
+    --link-color: #3a8fb7;
+    --border-color: #eee;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.glow-container {
+    background-color: var(--content-bg);
+    width: 100%;
+    max-width: 1000px;
+    min-height: 100vh;
+    padding: 40px 60px 60px 60px;
+    /* Removed the "Blue Glow" effect as requested */
+    position: relative;
+}
+
+header {
+    text-align: left;
+    margin-bottom: 60px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 500;
+    text-transform: lowercase;
+    margin-bottom: 10px;
+}
+
+header h1 span {
+    font-weight: 300;
+    font-size: 1.8rem;
+}
+
+header .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+}
+
+.follow-us {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    /* Spacing before the title */
+}
+
+/* Removed follow-us span styles as the span was removed */
+
+.follow-us a {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    transition: color 0.2s;
+}
+
+.follow-us a:hover {
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.status-msg {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2rem;
+}
+
+.error {
+    color: #cc0000;
+}
+
+.search-wrapper {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.icon-btn {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn:hover {
+    color: var(--text-main);
+    border-color: var(--text-muted);
+    background-color: #f9f9f9;
+}
+
+.search-wrapper input {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    max-width: 350px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.search-wrapper input:focus {
+    border-color: var(--link-color);
+}
+
+.search-wrapper input::placeholder {
+    color: #b0b0b0;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+
+th,
+td {
+    padding: 14px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+td {
+    line-height: 1.8;
+    min-height: 3.2em;
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+
+th {
+    background-color: transparent;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+th.sortable:hover {
+    color: var(--text-main);
+}
+
+.sort-arrow {
+    font-size: 0.65rem;
+    color: var(--link-color);
+}
+
+/* Sort controls - hidden on desktop */
+.sort-controls {
+    display: none;
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+    transition: background-color 0.15s ease;
+}
+
+/* Ensure grouping divs don't break desktop table */
+.location-group,
+.footer-group {
+    display: contents;
+}
+
+/* Grade in blue for desktop */
+td:nth-child(3) {
+    color: var(--link-color);
+    font-weight: bold;
+}
+
+td:last-child a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+td:last-child a:hover {
+    text-decoration: underline;
+}
+
+footer {
+    margin-top: 80px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 30px;
+}
+
+/* Mobile Card Styles */
+@media (max-width: 768px) {
+    .sort-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .sort-controls label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    .sort-controls select {
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.85rem;
+        color: var(--text-main);
+        background-color: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        outline: none;
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .sort-controls select:focus {
+        border-color: var(--link-color);
+    }
+
+    body {
+        padding: 10px;
+    }
+
+    .glow-container {
+        padding: 20px 15px;
+    }
+
+    .search-wrapper {
+        display: none;
+        margin-bottom: 15px;
+    }
+
+    .search-wrapper.active {
+        display: flex;
+    }
+
+    .search-wrapper input {
+        max-width: 100%;
+    }
+
+    header {
+        margin-bottom: 30px;
+    }
+
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    table {
+        border: 0;
+        box-shadow: none;
+    }
+
+    table thead {
+        display: none;
+    }
+
+    table tr {
+        display: block;
+        margin-bottom: 25px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        background: #fff;
+        position: relative;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+
+    table td {
+        display: inline;
+        padding: 0;
+        border: none;
+        line-height: 1.6;
+        min-height: unset;
+    }
+
+    /* ID - Harmonic Gray on the right */
+    table td[data-label="Nº"] {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 0.9rem;
+        color: #888888;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+    }
+
+    table td[data-label="Nº"]::before {
+        content: "#";
+        display: inline !important;
+    }
+
+    /* Row 1: Nom Grau (Metres m) */
+    table td[data-label="Nom"] {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    table td[data-label="Grau"] {
+        display: inline-block;
+        background-color: var(--link-color);
+        color: #fff;
+        padding: 0 8px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin: 0 4px;
+        vertical-align: middle;
+        line-height: 1.6;
+    }
+
+    table td[data-label="Metres"] {
+        color: #888;
+        font-weight: 400;
+        font-size: 1rem;
+    }
+
+    table td[data-label="Metres"]::before {
+        content: "(";
+        color: #888;
+        display: inline !important;
+    }
+
+    table td[data-label="Metres"]::after {
+        content: " m)";
+        color: #888;
+    }
+
+    /* Row 2: Location Block */
+    .location-group {
+        display: block;
+        margin-top: 5px;
+        line-height: 1.4;
+    }
+
+    table td[data-label="Agulla/Paret"],
+    table td[data-label="Zona"] {
+        display: inline;
+        font-size: 0.95rem;
+        color: #888888;
+    }
+
+    table td[data-label="Agulla/Paret"]::after {
+        content: ", ";
+        font-weight: 500;
+        color: #888888;
+    }
+
+    /* Row 3: Footer Group */
+    .footer-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+        padding-top: 12px;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    table td[data-label="Data"] {
+        display: block;
+        font-size: 0.8rem;
+        color: #888888;
+    }
+
+    table td[data-label="Enllaç"] {
+        display: block;
+    }
+
+    table td[data-label="Enllaç"] a {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--link-color);
+        text-decoration: underline;
+    }
+
+    /* Clear default labels */
+    table td::before {
+        display: none !important;
+    }
+}
