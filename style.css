@@ -156,10 +156,12 @@ td {
 }
 
 td {
-    line-height: 1.8;
-    min-height: 3.2em;
-    padding-top: 18px;
-    padding-bottom: 18px;
+    padding: 12px;
+    line-height: 1.4;
+    height: 54px;
+    /* Minimum height to harmonize rows */
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
 }
 
 th {
@@ -313,6 +315,7 @@ footer {
         display: inline;
         padding: 0;
         border: none;
+        height: auto;
         line-height: 1.6;
         min-height: unset;
     }
@@ -366,7 +369,7 @@ footer {
     }
 
     table td[data-label="Metres"]::after {
-        content: " m)";
+        content: ")";
         color: #888;
     }
 

@@ -29,6 +29,8 @@ const COLUMN_TYPES = {
     7: 'none'       // Enllaç (no sorting)
 };
 
+
+
 async function fetchWithFallback(url) {
     const cacheBuster = `&t=${Date.now()}`;
     const urlWithCacheBuster = url + cacheBuster;
@@ -140,6 +142,8 @@ function renderTable() {
         let footerGroup = null;
 
         row.forEach((cell, index) => {
+            if (index >= LABELS.length) return; // Skip extra columns like 'Ubicació'
+
             const td = document.createElement('td');
             td.setAttribute('data-label', LABELS[index]);
 
@@ -149,6 +153,8 @@ function renderTable() {
                 a.target = '_blank';
                 a.textContent = 'Veure blog';
                 td.appendChild(a);
+            } else if (index === 3) {
+                td.textContent = cell ? cell + ' m' : '-';
             } else {
                 td.textContent = cell || '-';
             }
