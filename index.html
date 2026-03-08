@@ -5,10 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vies d'Escalada - El príncep de les maduixes</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Leaflet Map JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -28,6 +32,43 @@
         <main>
             <div id="loading" class="status-msg">Carregant vies...</div>
             <div id="error" class="status-msg error" style="display: none;">Error carregant les dades.</div>
+
+            <div id="stats-summary" class="stats-container">
+                <!-- Estadístiques es carregaran aquí -->
+            </div>
+
+            <!-- Toggle Button -->
+            <div class="toggle-stats-wrapper">
+                <button id="toggle-stats-btn" class="btn-more-stats">
+                    més estadístiques <i class="fa-solid fa-chevron-down"></i>
+                </button>
+            </div>
+
+            <!-- Extra Stats Section (Hidden by default) -->
+            <div id="extra-stats-container" class="hidden">
+                <!-- Years Chart Section -->
+                <div id="years-chart-container" class="chart-wrapper">
+                    <h3 class="chart-title">distribució per any</h3>
+                    <canvas id="yearsChart"></canvas>
+                </div>
+
+                <!-- Grades Chart Section -->
+                <div id="chart-outer-container" class="chart-wrapper">
+                    <h3 class="chart-title">distribució de graus</h3>
+                    <canvas id="zonesChart"></canvas>
+                </div>
+
+                <!-- Seasons Chart Section -->
+                <div class="chart-wrapper">
+                    <h3 class="chart-title">distribució per estació</h3>
+                    <canvas id="seasonsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Map Section -->
+            <div id="map-container" class="map-container">
+                <div id="map"></div>
+            </div>
 
             <div class="sort-controls">
                 <label for="mobile-sort">Ordenar per:</label>
