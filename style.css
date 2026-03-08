@@ -221,6 +221,29 @@ td:last-child a:hover {
     text-decoration: underline;
 }
 
+/* Map icon cell */
+.map-cell {
+    text-align: center;
+    width: 42px;
+    padding: 12px 4px;
+}
+
+.map-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--link-color);
+    font-size: 1.1rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+    text-decoration: none;
+}
+
+.map-link:hover {
+    color: #d94f3d;
+    transform: scale(1.25) translateY(-2px);
+    text-decoration: none;
+}
+
 footer {
     margin-top: 80px;
     text-align: center;
@@ -391,6 +414,18 @@ footer {
         content: ", ";
         font-weight: 500;
         color: #888888;
+    }
+
+    /* Map icon in mobile: small, inline after Zona */
+    table td[data-label="Mapa"] {
+        display: inline;
+        vertical-align: middle;
+    }
+
+    table td[data-label="Mapa"] .map-link {
+        font-size: 0.85rem;
+        margin-left: 4px;
+        vertical-align: middle;
     }
 
     /* Row 3: Footer Group */

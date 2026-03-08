@@ -15,7 +15,9 @@ let searchQuery = ''; // Current search filter
 // Columns to search: Nom(1), Grau(2), Agulla/Paret(4), Zona(5)
 const SEARCH_COLUMNS = [1, 2, 4, 5];
 
+// CSV columns: 0=Nº,1=Nom,2=Grau,3=Metres,4=Agulla/Paret,5=Zona,6=Data,7=Enllaç,8=Ubicació(coords)
 const LABELS = ['Nº', 'Nom', 'Grau', 'Metres', 'Agulla/Paret', 'Zona', 'Data', 'Enllaç'];
+const COORDS_COL = 8; // Index of the Ubicació column in the CSV
 
 // Column types for smart sorting
 const COLUMN_TYPES = {
@@ -141,6 +143,10 @@ function renderTable() {
         let locationGroup = null;
         let footerGroup = null;
 
+        // Read coordinates from CSV column 8
+        const coordsRaw = (row[COORDS_COL] || '').trim();
+        const mapUrl = buildMapUrl(coordsRaw);
+
         row.forEach((cell, index) => {
             if (index >= LABELS.length) return; // Skip extra columns like 'Ubicació'
 
@@ -169,6 +175,12 @@ function renderTable() {
                     tr.appendChild(locationGroup);
                 }
                 locationGroup.appendChild(td);
+
+                // After inserting Zona (index 5), add the map icon cell into location-group
+                if (index === 5) {
+                    const mapTd = buildMapCell(mapUrl);
+                    locationGroup.appendChild(mapTd);
+                }
             }
             // Group Data and Enllaç for Footer in mobile
             else if (index === 6 || index === 7) {
@@ -186,6 +198,44 @@ function renderTable() {
 
         tableBody.appendChild(tr);
     });
+}
+
+/**
+ * Given a raw coordinate string ("lat,lng", Google Maps URL, or empty),
+ * returns a Google Maps URL or null.
+ */
+function buildMapUrl(coordsRaw) {
+    if (!coordsRaw) return null;
+    // Already a URL
+    if (coordsRaw.startsWith('http')) return coordsRaw;
+    // Decimal degrees: "41.5827,1.8342" or "41.5827, 1.8342"
+    const match = coordsRaw.match(/^(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)$/);
+    if (match) {
+        return `https://www.google.com/maps?q=${match[1]},${match[2]}`;
+    }
+    return null;
+}
+
+/**
+ * Build the <td> cell containing the map pin icon (or empty if no URL).
+ */
+function buildMapCell(mapUrl) {
+    const td = document.createElement('td');
+    td.setAttribute('data-label', 'Mapa');
+    td.className = 'map-cell';
+    if (mapUrl) {
+        const a = document.createElement('a');
+        a.href = mapUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.title = 'Veure ubicació al mapa';
+        a.className = 'map-link';
+        const icon = document.createElement('i');
+        icon.className = 'fa-solid fa-location-dot';
+        a.appendChild(icon);
+        td.appendChild(a);
+    }
+    return td;
 }
 
 /**
