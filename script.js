@@ -823,21 +823,42 @@ function updateMapMarkers(data) {
             const zone = row[5] || '-';
             const dataObra = row[6] || '-';
 
-            const marker = L.marker([lat, lng])
+            // Custom Neobrutalist Icon (Always Cyan as requested)
+            const customIcon = L.divIcon({
+                className: 'marker-neo',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+                popupAnchor: [0, -10]
+            });
+
+            const marker = L.marker([lat, lng], { icon: customIcon })
                 .bindPopup(`
-                    <div style="font-family: 'Outfit', sans-serif; min-width: 180px; padding: 2px;">
-                        <strong style="color: var(--link-color); display: block; margin-bottom: 6px; font-size: 1.05rem; line-height: 1.2;">${name}</strong>
-                        <div style="font-size: 0.9rem; color: #334155; line-height: 1.5;">
-                            <div style="margin-bottom: 2px;"><strong>Grau:</strong> <span class="grade-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; vertical-align: middle;">${grade}</span></div>
-                            <div style="margin-bottom: 4px;"><strong>Lloc:</strong> ${paret}<br><span style="color: #64748b; font-size: 0.85rem;">${zone}</span></div>
-                            <div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 6px; font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 6px;">
-                                <i class="fa-regular fa-calendar" style="font-size: 0.7rem;"></i> ${dataObra}
+                    <div class="neo-popup-content">
+                        <strong class="popup-title">${name}</strong>
+                        <div class="popup-details">
+                            <div class="popup-row"><strong>Grau:</strong> <span class="grade-pill">${grade}</span></div>
+                            <div class="popup-row"><strong>Lloc:</strong> ${paret}</div>
+                            <div class="popup-zone">${zone}</div>
+                            <div class="popup-footer">
+                                <i class="fa-regular fa-calendar"></i> ${dataObra}
                             </div>
                         </div>
                     </div>
                 `, {
-                    maxWidth: 250
+                    maxWidth: 250,
+                    className: 'neo-popup'
                 });
+
+            // Handle active state on marker open/close
+            marker.on('popupopen', () => {
+                const el = marker.getElement();
+                if (el) el.classList.add('marker-active');
+            });
+            marker.on('popupclose', () => {
+                const el = marker.getElement();
+                if (el) el.classList.remove('marker-active');
+            });
+
             markerLayer.addLayer(marker);
             markers.push([lat, lng]);
         }

@@ -23,3 +23,7 @@ yarn-error.log*
 *.csv
 *.json
 !manifest.json
+
+# IA agents
+.agent
+SKILL.md
