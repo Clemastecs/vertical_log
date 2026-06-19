@@ -27,3 +27,5 @@ yarn-error.log*
 # IA agents
 .agent
 SKILL.md
+.claude
+CLAUDE.md

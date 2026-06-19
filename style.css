@@ -1,19 +1,71 @@
 :root {
-    --neo-black: #000000;
-    --neo-white: #FFFFFF;
-    --neo-yellow: #FFFF00;
-    --neo-pink: #FF00FF;
-    --neo-cyan: #00FFFF;
-    --neo-green: #00FF00;
-    --neo-red: #FF0000;
-    --neo-blue: #0000FF;
-    --neo-orange: #FF6600;
-    --bg-primary: #FFFFFF;
-    --bg-card: #FFFFFF;
-    --text-main: #000000;
-    --text-muted: #666666;
-    --link-color: #3a8fb7;
-    --border-color: var(--neo-black);
+    /* Paleta clara — Blau elèctric & paper */
+    --bg: #F4F4F0;
+    /* fons pàgina */
+    --surface: #FFFFFF;
+    /* targetes, taula, inputs */
+    --ink: #111317;
+    /* text + TOTES les vores ("el negre") */
+    --muted: #6B7280;
+    /* text secundari */
+    --accent: #2563EB;
+    /* cobalt: pills, focus, barres gràfics */
+    --accent-2: #FFD23F;
+    /* groc: hovers + capçalera taula (mateix to) */
+    --header-bg: var(--accent-2);
+    /* capçalera taula */
+    --header-text: #111317;
+    --link: #2563EB;
+    --danger: #DC2626;
+    --line: rgba(17, 19, 23, .06);
+    /* hover de fila visible */
+    --row-alt: rgba(17, 19, 23, .035);
+    /* zebra: files parelles */
+
+    /* Ombres (color separat de l'offset) */
+    --shadow: var(--accent);
+    --shadow-hover: var(--accent-2);
+
+    /* Escala d'ombres dures */
+    --sh-sm: 2px 2px 0;
+    --sh-md: 4px 4px 0;
+    --sh-lg: 8px 8px 0;
+
+    /* Vores */
+    --bd: 2px;
+    --bd-thick: 3px;
+
+    /* Alies de compatibilitat (codi antic) */
+    --bg-primary: var(--bg);
+    --bg-card: var(--surface);
+    --text-main: var(--ink);
+    --text-muted: var(--muted);
+    --link-color: var(--link);
+    --border-color: var(--ink);
+    --neo-black: var(--ink);
+    --neo-white: var(--surface);
+    --neo-yellow: var(--header-bg);
+    --neo-cyan: var(--shadow);
+    --neo-pink: var(--shadow-hover);
+}
+
+[data-theme="dark"] {
+    --bg: #0F1115;
+    --surface: #1A1D24;
+    --ink: #ECEDEE;
+    /* text i vores passen a clar */
+    --muted: #9AA1AC;
+    --accent: #3B82F6;
+    --accent-2: #FBBF24;
+    --header-bg: #232833;
+    --header-text: #FBBF24;
+    --link: #60A5FA;
+    --danger: #F87171;
+    --line: rgba(255, 255, 255, .08);
+    --row-alt: rgba(255, 255, 255, .04);
+    --shadow: var(--accent);
+    /* negre no es veu sobre fosc → accent */
+    --shadow-hover: var(--accent-2);
 }
 
 * {
@@ -23,18 +75,25 @@
 }
 
 body {
-    font-family: 'Public Sans', system-ui, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-main);
+    font-family: 'Lexend', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
     line-height: 1.6;
     display: flex;
     justify-content: center;
     padding: 40px 20px;
     min-height: 100vh;
+    transition: background-color .25s ease, color .25s ease;
+}
+
+/* Focus visible per a navegació amb teclat */
+:focus-visible {
+    outline: var(--bd) solid var(--accent);
+    outline-offset: 2px;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
@@ -57,17 +116,17 @@ header h1 {
     font-weight: 900;
     line-height: 1.1;
     margin-bottom: 15px;
-    text-shadow: 3px 3px 0px var(--neo-cyan);
+    text-shadow: 3px 3px 0px var(--accent);
 }
 
 header h1 span {
     font-weight: 400;
     font-size: 2rem;
-    background: var(--neo-yellow);
-    color: var(--neo-black);
+    background: var(--header-bg);
+    color: var(--header-text);
     padding: 0 10px;
-    border: 3px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-black);
+    border: var(--bd-thick) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
     display: inline-block;
     vertical-align: middle;
     margin-left: 10px;
@@ -123,7 +182,7 @@ header .subtitle {
 }
 
 .error {
-    color: #cc0000;
+    color: var(--danger);
 }
 
 .search-wrapper {
@@ -154,22 +213,23 @@ header .subtitle {
 }
 
 .search-wrapper input {
-    font-family: 'Public Sans', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--neo-black);
-    background: var(--neo-white);
-    border: 3px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-black);
+    color: var(--ink);
+    background: var(--surface);
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
     padding: 12px 16px;
     width: 100%;
     max-width: 400px;
     outline: none;
-    transition: box-shadow 0.15s ease;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .search-wrapper input:focus {
-    box-shadow: 4px 4px 0px var(--neo-cyan);
+    transform: translate(-1px, -1px);
+    box-shadow: var(--sh-md) var(--shadow-hover);
 }
 
 .search-wrapper input::placeholder {
@@ -209,10 +269,15 @@ header .subtitle {
     transform: translateY(-2px);
 }
 
+.stats-item:hover .stats-value {
+    box-shadow: var(--sh-md) var(--shadow-hover);
+    border-color: var(--accent);
+}
+
 .chart-wrapper {
-    background: var(--neo-white);
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-black);
+    background: var(--surface);
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
     padding: 40px 25px 30px;
     margin-bottom: 50px;
     min-height: 250px;
@@ -237,7 +302,7 @@ header .subtitle {
     border: 2px solid var(--neo-black);
     box-shadow: 4px 4px 0px var(--neo-cyan);
     padding: 12px 24px;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-size: 0.9rem;
     font-weight: 800;
     cursor: pointer;
@@ -265,7 +330,7 @@ header .subtitle {
 
 .chart-title {
     text-align: center;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-size: 0.8rem;
     font-weight: 800;
     color: var(--text-muted);
@@ -300,48 +365,53 @@ header .subtitle {
     filter: grayscale(100%) contrast(120%) brightness(110%);
 }
 
+/* Mapa en tema fosc: enfosquir els tiles clars */
+[data-theme="dark"] .leaflet-tile-pane {
+    filter: grayscale(100%) invert(100%) contrast(.9) brightness(.9) hue-rotate(180deg);
+}
+
 /* Marcadors Neobrutalistes */
 .marker-neo {
     width: 20px !important;
     height: 20px !important;
     border-radius: 50%;
-    border: 3px solid var(--neo-black);
-    box-shadow: 2px 2px 0px var(--neo-black);
-    background-color: var(--neo-cyan);
+    border: var(--bd-thick) solid var(--ink);
+    box-shadow: var(--sh-sm) var(--ink);
+    background-color: var(--accent);
     transition: all 0.15s ease;
 }
 
 .marker-neo:hover,
 .marker-neo.marker-active {
-    background-color: var(--neo-pink) !important;
+    background-color: var(--accent-2) !important;
     transform: scale(1.3);
-    box-shadow: 3px 3px 0px var(--neo-black);
+    box-shadow: var(--sh-md) var(--ink);
 }
 
 /* Popups Neobrutalistes */
 .neo-popup .leaflet-popup-content-wrapper {
-    background: var(--neo-white);
-    color: var(--neo-black);
-    border: 3px solid var(--neo-black);
+    background: var(--surface);
+    color: var(--ink);
+    border: var(--bd-thick) solid var(--ink);
     border-radius: 0;
-    box-shadow: 6px 6px 0px var(--neo-black);
+    box-shadow: var(--sh-lg) var(--shadow);
     padding: 0;
 }
 .neo-popup .leaflet-popup-content {
     margin: 15px;
-    font-family: 'Public Sans', sans-serif;
+    font-family: 'Lexend', sans-serif;
 }
 .neo-popup .leaflet-popup-tip-container { display: none; }
 .popup-title {
     display: block;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-size: 1rem;
     font-weight: 800;
     margin-bottom: 8px;
     line-height: 1.2;
 }
 .popup-row { margin-bottom: 6px; font-size: 0.85rem; }
-.popup-zone { color: #666; font-size: 0.8rem; margin-bottom: 10px; }
+.popup-zone { color: var(--muted); font-size: 0.8rem; margin-bottom: 10px; }
 .popup-footer {
     border-top: 2px solid var(--neo-black);
     padding-top: 8px;
@@ -359,22 +429,23 @@ header .subtitle {
 
 .stats-value {
     display: inline-block;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-size: 1.4rem;
     font-weight: 900;
     color: var(--neo-black);
     line-height: 1.2;
     padding: 6px 14px;
-    border: 3px solid var(--neo-black);
-    box-shadow: 3px 3px 0px var(--neo-black);
-    background-color: var(--neo-white);
+    border: var(--bd-thick) solid var(--ink);
+    box-shadow: var(--sh-sm) var(--shadow);
+    background-color: var(--surface);
+    transition: box-shadow .15s ease, border-color .15s ease;
 }
 
 .stats-label {
     display: block;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #666;
+    color: var(--muted);
     margin-top: 5px;
     text-transform: uppercase;
 }
@@ -390,8 +461,8 @@ header .subtitle {
     .stats-value {
         font-size: 1.1rem;
         padding: 4px 10px;
-        border-width: 2px;
-        box-shadow: 2px 2px 0px var(--neo-black);
+        border-width: var(--bd);
+        box-shadow: var(--sh-sm) var(--shadow);
     }
 }
 
@@ -402,9 +473,9 @@ header .subtitle {
 table {
     width: 100%;
     border-collapse: collapse;
-    border: 3px solid var(--neo-black);
-    box-shadow: 8px 8px 0px var(--neo-black);
-    background: var(--neo-white);
+    border: var(--bd-thick) solid var(--ink);
+    box-shadow: var(--sh-lg) var(--shadow);
+    background: var(--surface);
 }
 
 th,
@@ -424,7 +495,7 @@ td {
 
 th {
     background: var(--neo-yellow);
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-weight: 800;
     color: var(--neo-black);
     text-transform: uppercase;
@@ -455,7 +526,7 @@ th.sortable:hover {
 }
 
 tr:hover {
-    background-color: #f9f9f9;
+    background-color: var(--line);
     transition: background-color 0.15s ease;
 }
 
@@ -485,17 +556,39 @@ tr:hover {
     td[data-label="Grau"] {
         width: 80px;
     }
+
+    /* No retallar verticalment perquè el sticky de la capçalera funcioni */
+    .table-wrapper {
+        overflow: visible;
+    }
+
+    /* Capçalera enganxada a dalt en fer scroll */
+    thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    /* Files alternades (zebra) — més subtil que el hover */
+    tbody tr:nth-child(even) {
+        background-color: var(--row-alt);
+    }
+
+    /* Hover després de la zebra perquè guanyi (mateixa especificitat) */
+    tbody tr:hover {
+        background-color: var(--line);
+    }
 }
 
 .grade-pill {
     display: inline-block;
-    background: var(--neo-cyan);
-    color: var(--neo-black);
+    background: var(--accent);
+    color: #fff;
     padding: 4px 10px;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-weight: 800;
     font-size: 0.75rem;
-    border: 2px solid var(--neo-black);
+    border: var(--bd) solid var(--ink);
     white-space: nowrap;
 }
 
@@ -505,11 +598,16 @@ td[data-label="Metres"] {
     text-align: center;
 }
 
+/* Evita que la data es parteixi en dues línies (p. ex. "2025-03") */
+td[data-label="Data"] {
+    white-space: nowrap;
+}
+
 td:last-child a {
     background: var(--neo-black);
     color: var(--neo-white);
     text-decoration: none;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-weight: 800;
     font-size: 0.8rem;
     padding: 8px 16px;
@@ -560,7 +658,7 @@ footer {
     text-align: center;
     border-top: 2px solid var(--neo-black);
     padding-top: 40px;
-    font-family: 'Lexend Mega', sans-serif;
+    font-family: 'Lexend', sans-serif;
     font-weight: 700;
     font-size: 0.95rem;
     color: var(--text-muted);
@@ -606,7 +704,7 @@ footer a:hover {
     }
 
     .sort-controls label {
-        font-family: 'Lexend Mega', sans-serif;
+        font-family: 'Lexend', sans-serif;
         font-size: 0.85rem;
         font-weight: 800;
         color: var(--neo-black);
@@ -614,15 +712,15 @@ footer a:hover {
 
     .sort-controls select {
         flex: 1;
-        font-family: 'Public Sans', sans-serif;
+        font-family: 'Lexend', sans-serif;
         font-weight: 700;
         font-size: 1rem;
         padding: 12px;
-        border: 2px solid var(--neo-black);
-        box-shadow: 3px 3px 0px var(--neo-black);
-        outline: none;
+        border: var(--bd) solid var(--ink);
+        box-shadow: var(--sh-sm) var(--shadow);
         cursor: pointer;
-        background: var(--neo-white);
+        background: var(--surface);
+        color: var(--ink);
     }
 
     .search-wrapper {
@@ -635,8 +733,8 @@ footer a:hover {
     }
 
     .search-wrapper input {
-        border-width: 2px;
-        box-shadow: 3px 3px 0px var(--neo-black);
+        border-width: var(--bd);
+        box-shadow: var(--sh-sm) var(--shadow);
     }
 
     header {
@@ -645,14 +743,14 @@ footer a:hover {
 
     header h1 {
         font-size: 2.2rem;
-        text-shadow: 2px 2px 0px var(--neo-cyan);
+        text-shadow: 2px 2px 0px var(--accent);
         margin-top: 40px;
         margin-bottom: 20px;
     }
 
     header h1 span {
         font-size: 1.4rem;
-        box-shadow: 2px 2px 0px var(--neo-black);
+        box-shadow: var(--sh-sm) var(--shadow);
     }
 
     .table-wrapper {
@@ -677,10 +775,10 @@ footer a:hover {
         flex-direction: column;
         margin-top: 20px;
         margin-bottom: 35px;
-        border: 2px solid var(--neo-black);
-        box-shadow: 4px 4px 0px var(--neo-black);
+        border: var(--bd) solid var(--ink);
+        box-shadow: var(--sh-md) var(--shadow);
         padding: 25px 20px;
-        background: var(--neo-white);
+        background: var(--surface);
         position: relative;
         transition: transform 0.15s ease;
     }
@@ -702,7 +800,7 @@ footer a:hover {
         top: 20px;
         right: 20px;
         font-size: 0.9rem;
-        color: #888888;
+        color: var(--muted);
         font-weight: 500;
         letter-spacing: 0.05em;
         z-index: 10;
@@ -741,7 +839,7 @@ footer a:hover {
 
     table td[data-label="Metres"] {
         display: inline-block;
-        color: #888;
+        color: var(--muted);
         font-weight: 400;
         font-size: 0.95rem;
     }

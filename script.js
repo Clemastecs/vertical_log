@@ -37,12 +37,32 @@ const COLUMN_TYPES = {
     7: 'none'       // Enllaç (no sorting)
 };
 
+/**
+ * Read a CSS theme custom property (e.g. '--accent') from :root, with a fallback.
+ * Used so Chart.js colours follow the active light/dark theme.
+ */
+function getThemeColor(variableName, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+}
+
 
 
 async function fetchWithFallback(url) {
     const cacheBuster = `&t=${Date.now()}`;
     const urlWithCacheBuster = url + cacheBuster;
 
+    // 1) Direct request first. Google's "published to web" CSV now serves
+    //    `Access-Control-Allow-Origin: *`, so in practice no proxy is needed.
+    try {
+        console.log('Trying direct fetch...');
+        const direct = await fetch(urlWithCacheBuster, { cache: "no-store" });
+        if (direct.ok) return await direct.text();
+    } catch (err) {
+        console.warn('Direct fetch failed, falling back to CORS proxies...');
+    }
+
+    // 2) Fall back to third-party CORS proxies (may be rate-limited or down).
     for (const proxy of PROXIES) {
         try {
             console.log(`Trying proxy: ${proxy}`);
@@ -52,7 +72,7 @@ async function fetchWithFallback(url) {
             console.warn(`Proxy ${proxy} failed, trying next...`);
         }
     }
-    throw new Error('All proxies failed');
+    throw new Error('No s\'han pogut carregar les dades (ni directament ni via proxies).');
 }
 
 /**
@@ -273,8 +293,8 @@ function renderYearsChart(data) {
                 {
                     label: 'Esquerra',
                     data: leftData,
-                    backgroundColor: '#3a8fb7',
-                    borderColor: '#3a8fb7',
+                    backgroundColor: getThemeColor('--accent', '#2563EB'),
+                    borderColor: getThemeColor('--accent', '#2563EB'),
                     borderWidth: 0,
                     borderRadius: { topLeft: 4, bottomLeft: 4 },
                     barPercentage: 0.96,
@@ -285,8 +305,8 @@ function renderYearsChart(data) {
                 {
                     label: 'Dreta',
                     data: rightData,
-                    backgroundColor: '#3a8fb7',
-                    borderColor: '#3a8fb7',
+                    backgroundColor: getThemeColor('--accent', '#2563EB'),
+                    borderColor: getThemeColor('--accent', '#2563EB'),
                     borderWidth: 0,
                     borderRadius: { topRight: 4, bottomRight: 4 },
                     barPercentage: 0.96,
@@ -309,7 +329,7 @@ function renderYearsChart(data) {
                     ticks: { display: false },
                     grid: {
                         drawOnChartArea: true,
-                        color: (context) => context.tick.value === 0 ? '#cbd5e1' : 'transparent',
+                        color: (context) => context.tick.value === 0 ? getThemeColor('--muted', '#cbd5e1') : 'transparent',
                         lineWidth: (context) => context.tick.value === 0 ? 2 : 0,
                         drawTicks: false
                     }
@@ -317,8 +337,8 @@ function renderYearsChart(data) {
                 y: {
                     stacked: true,
                     ticks: {
-                        color: '#475569',
-                        font: { family: 'Outfit, sans-serif', size: 13, weight: '500' },
+                        color: getThemeColor('--muted', '#6B7280'),
+                        font: { family: 'Lexend, sans-serif', size: 13, weight: '500' },
                         padding: 10
                     },
                     grid: { display: false }
@@ -332,7 +352,9 @@ function renderYearsChart(data) {
                             return ` Vies: ${val}`;
                         }
                     },
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    backgroundColor: getThemeColor('--ink', '#111317'),
+                    bodyColor: getThemeColor('--surface', '#ffffff'),
+                    titleColor: getThemeColor('--surface', '#ffffff'),
                     padding: 12,
                     cornerRadius: 8,
                     displayColors: false
@@ -432,8 +454,8 @@ function renderChart(data) {
                 {
                     label: 'Esquerra',
                     data: leftData,
-                    backgroundColor: '#3a8fb7', // Solid blog blue
-                    borderColor: '#3a8fb7',
+                    backgroundColor: getThemeColor('--accent', '#2563EB'), // Solid blog blue
+                    borderColor: getThemeColor('--accent', '#2563EB'),
                     borderWidth: 0,
                     borderRadius: { topLeft: 4, bottomLeft: 4 },
                     barPercentage: 0.96,
@@ -444,8 +466,8 @@ function renderChart(data) {
                 {
                     label: 'Dreta',
                     data: rightData,
-                    backgroundColor: '#3a8fb7', // Solid blog blue
-                    borderColor: '#3a8fb7',
+                    backgroundColor: getThemeColor('--accent', '#2563EB'), // Solid blog blue
+                    borderColor: getThemeColor('--accent', '#2563EB'),
                     borderWidth: 0,
                     borderRadius: { topRight: 4, bottomRight: 4 },
                     barPercentage: 0.96,
@@ -468,7 +490,7 @@ function renderChart(data) {
                     ticks: { display: false },
                     grid: {
                         drawOnChartArea: true,
-                        color: (context) => context.tick.value === 0 ? '#cbd5e1' : 'transparent',
+                        color: (context) => context.tick.value === 0 ? getThemeColor('--muted', '#cbd5e1') : 'transparent',
                         lineWidth: (context) => context.tick.value === 0 ? 2 : 0,
                         drawTicks: false
                     }
@@ -476,8 +498,8 @@ function renderChart(data) {
                 y: {
                     stacked: true,
                     ticks: {
-                        color: '#475569',
-                        font: { family: 'Outfit, sans-serif', size: 13, weight: '500' },
+                        color: getThemeColor('--muted', '#6B7280'),
+                        font: { family: 'Lexend, sans-serif', size: 13, weight: '500' },
                         padding: 10
                     },
                     grid: { display: false }
@@ -491,7 +513,9 @@ function renderChart(data) {
                             return ` Vies: ${val}`;
                         }
                     },
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    backgroundColor: getThemeColor('--ink', '#111317'),
+                    bodyColor: getThemeColor('--surface', '#ffffff'),
+                    titleColor: getThemeColor('--surface', '#ffffff'),
                     padding: 12,
                     cornerRadius: 8,
                     displayColors: false
@@ -568,8 +592,8 @@ function renderSeasonsChart(data) {
                 {
                     label: 'Esquerra',
                     data: leftData,
-                    backgroundColor: '#3a8fb7',
-                    borderColor: '#3a8fb7',
+                    backgroundColor: getThemeColor('--accent', '#2563EB'),
+                    borderColor: getThemeColor('--accent', '#2563EB'),
                     borderWidth: 0,
                     borderRadius: { topLeft: 4, bottomLeft: 4 },
                     barPercentage: 0.96,
@@ -580,8 +604,8 @@ function renderSeasonsChart(data) {
                 {
                     label: 'Dreta',
                     data: rightData,
-                    backgroundColor: '#3a8fb7',
-                    borderColor: '#3a8fb7',
+                    backgroundColor: getThemeColor('--accent', '#2563EB'),
+                    borderColor: getThemeColor('--accent', '#2563EB'),
                     borderWidth: 0,
                     borderRadius: { topRight: 4, bottomRight: 4 },
                     barPercentage: 0.96,
@@ -604,7 +628,7 @@ function renderSeasonsChart(data) {
                     ticks: { display: false },
                     grid: {
                         drawOnChartArea: true,
-                        color: (context) => context.tick.value === 0 ? '#cbd5e1' : 'transparent',
+                        color: (context) => context.tick.value === 0 ? getThemeColor('--muted', '#cbd5e1') : 'transparent',
                         lineWidth: (context) => context.tick.value === 0 ? 2 : 0,
                         drawTicks: false
                     }
@@ -612,8 +636,8 @@ function renderSeasonsChart(data) {
                 y: {
                     stacked: true,
                     ticks: {
-                        color: '#475569',
-                        font: { family: 'Outfit, sans-serif', size: 13, weight: '500' },
+                        color: getThemeColor('--muted', '#6B7280'),
+                        font: { family: 'Lexend, sans-serif', size: 13, weight: '500' },
                         padding: 10
                     },
                     grid: { display: false }
@@ -627,7 +651,9 @@ function renderSeasonsChart(data) {
                             return ` Vies: ${val}`;
                         }
                     },
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    backgroundColor: getThemeColor('--ink', '#111317'),
+                    bodyColor: getThemeColor('--surface', '#ffffff'),
+                    titleColor: getThemeColor('--surface', '#ffffff'),
                     padding: 12,
                     cornerRadius: 8,
                     displayColors: false
@@ -1019,6 +1045,14 @@ async function fetchAndRenderVies() {
     } catch (error) {
         console.error('Fetch error:', error);
         loadingElem.style.display = 'none';
+        // Opening the file directly (file://) blocks all remote fetches in the browser,
+        // so no data can ever load that way. Give a clear, actionable message.
+        if (location.protocol === 'file:') {
+            errorElem.innerHTML = 'Has obert la pàgina com a fitxer local (<code>file://</code>), '
+                + 'i el navegador no permet carregar dades remotes així.<br>'
+                + 'Cal servir-la per HTTP, p. ex.: <code>python -m http.server</code> '
+                + 'i obrir <code>http://localhost:8000</code> (o publicar-la en un hosting).';
+        }
         errorElem.style.display = 'block';
     }
 }
@@ -1042,12 +1076,7 @@ function setupStatsToggle() {
         } else {
             btn.innerHTML = 'menys estadístiques <i class="fa-solid fa-chevron-up"></i>';
             // Force charts to render if they were hidden when called
-            renderYearsChart(getFilteredData());
-            renderChart(getFilteredData());
-            renderSeasonsChart(getFilteredData()); // Call the new seasons chart
-            if (yearsChart) yearsChart.resize();
-            if (zonesChart) zonesChart.resize();
-            if (seasonsChart) seasonsChart.resize();
+            refreshCharts();
         }
     });
 }
@@ -1087,8 +1116,56 @@ function parseCSV(text) {
     return result;
 }
 
+/**
+ * Re-render the three charts from the current filtered data and resize them.
+ * Shared by the stats toggle and the theme switch (so colours follow the theme).
+ */
+function refreshCharts() {
+    renderYearsChart(getFilteredData());
+    renderChart(getFilteredData());
+    renderSeasonsChart(getFilteredData());
+    if (yearsChart) yearsChart.resize();
+    if (zonesChart) zonesChart.resize();
+    if (seasonsChart) seasonsChart.resize();
+}
+
+/**
+ * Apply a theme ('light' | 'dark') to the document and sync the toggle icon.
+ */
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.querySelector('#theme-toggle i');
+    if (icon) {
+        icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+}
+
+/**
+ * Wire up the theme toggle: restore the saved/system preference and handle clicks.
+ */
+function setupThemeToggle() {
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(stored || (prefersDark ? 'dark' : 'light'));
+
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem('theme', next);
+        // If the charts are currently visible, re-render so they pick up the new theme colours.
+        const extra = document.getElementById('extra-stats-container');
+        if (extra && !extra.classList.contains('hidden')) {
+            refreshCharts();
+        }
+    });
+}
+
 // Start fetching when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    setupThemeToggle(); // Apply theme before anything renders
     initMap(); // Init map immediately
     fetchAndRenderVies();
 
