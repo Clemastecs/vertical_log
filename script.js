@@ -648,6 +648,9 @@ function initMap() {
         scrollWheelZoom: false // no zoom with the mouse wheel (use the +/- buttons)
     });
 
+    // Keep the Leaflet credit but drop the default Ukrainian flag from the prefix.
+    map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+
     // Add Layer Control so the user can manually switch if they want
     const baseMaps = {
         "Mapa Estàndard (OSM)": baseOSM,

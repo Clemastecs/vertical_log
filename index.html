@@ -88,8 +88,7 @@
             </div>
 
             <div class="sort-controls">
-                <label for="mobile-sort">Ordenar per:</label>
-                <select id="mobile-sort">
+                <select id="mobile-sort" aria-label="Ordenar per">
                     <option value="0-desc">Nº ↓</option>
                     <option value="0-asc">Nº ↑</option>
                     <option value="1-asc">Nom A-Z</option>
@@ -101,9 +100,16 @@
                 </select>
                 <button id="search-toggle" class="icon-btn" title="Cerca"><svg class="icon"
                         aria-hidden="true"><use href="#i-search"></use></svg></button>
-                <button class="refresh-btn js-refresh" type="button" title="Actualitza des del full"
-                    aria-label="Actualitza des del full"><svg class="icon" aria-hidden="true"><use
-                            href="#i-refresh"></use></svg></button>
+                <span class="bar-actions">
+                    <button class="refresh-btn js-refresh" type="button" title="Actualitza des del full"
+                        aria-label="Actualitza des del full"><svg class="icon" aria-hidden="true"><use
+                                href="#i-refresh"></use></svg></button>
+                    <a class="refresh-btn"
+                        href="https://docs.google.com/spreadsheets/d/1oCcDi61G43sOByR2wFP3d1LBLx4YN_suXttxySiF6JE/edit?gid=1679149998#gid=1679149998"
+                        target="_blank" rel="noopener" title="Edita la llista al full"
+                        aria-label="Edita la llista al full"><svg class="icon" aria-hidden="true"><use
+                                href="#i-pen"></use></svg></a>
+                </span>
             </div>
 
             <div class="search-wrapper" id="search-wrapper">

@@ -117,6 +117,18 @@ body {
     color: var(--accent);
 }
 
+/* When the refresh/edit control is a link, no underline */
+a.refresh-btn {
+    text-decoration: none;
+}
+
+/* Group the refresh + edit icons together in the mobile controls bar */
+.bar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+}
+
 .refresh-btn:disabled {
     cursor: default;
     opacity: 0.7;
