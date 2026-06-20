@@ -644,7 +644,8 @@ function initMap() {
     map = L.map('map', {
         center: [41.5912, 1.8375],
         zoom: 7,
-        layers: [baseOSM, baseTopo]
+        layers: [baseOSM, baseTopo],
+        scrollWheelZoom: false // no zoom with the mouse wheel (use the +/- buttons)
     });
 
     // Add Layer Control so the user can manually switch if they want
@@ -1148,6 +1149,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupThemeToggle(); // Apply theme before anything renders
     setupLazyMap();     // Map (Leaflet) loads when it scrolls into view
     setupRefresh();     // Discreet "refresh from Sheet" button
+
+    // Discreet edit link: warn if the Sheet edit URL hasn't been configured yet.
+    const editLink = document.getElementById('edit-sheet');
+    if (editLink && editLink.getAttribute('href').includes('__SHEET_EDIT_URL__')) {
+        editLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert("Cal configurar l'URL d'edició del full a index.html (href de #edit-sheet).");
+        });
+    }
+
     fetchAndRenderVies();
 
     // Set dynamic year

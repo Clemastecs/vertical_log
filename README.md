@@ -44,6 +44,8 @@ it's missing.
 - **Manual sync**: GitHub → *Actions* → *Sync vies data* → *Run workflow*.
 - **In-page refresh**: the discreet ⟳ button by the table loads the latest data live
   from the Sheet, bypassing the local copy and the cache.
+- **Editing**: a discreet ✎ link in the footer opens the Sheet in edit mode (Google
+  handles login/permissions). Set its URL in the `#edit-sheet` href in `index.html`.
 
 ## 🔧 Setup
 

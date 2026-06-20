@@ -133,16 +133,19 @@ body {
     transform-origin: center;
 }
 
-/* Botó de refresc integrat a la capçalera de la taula */
+/* Accions (refresc + edició) integrades a la capçalera de la taula */
 th.refresh-col {
     text-align: center;
-    padding: 4px;
-    width: 42px;
+    padding: 4px 2px;
+    width: 70px;
+    white-space: nowrap;
 }
 
 th.refresh-col .refresh-btn {
     color: var(--header-text);
-    opacity: 0.65;
+    opacity: 0.6;
+    padding: 6px 4px;
+    text-decoration: none;
 }
 
 th.refresh-col .refresh-btn:hover {
