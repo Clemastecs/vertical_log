@@ -17,6 +17,53 @@ let seasonsChart = null;
 let map = null;
 let markerLayer = null;
 
+// --- Lazy-loaded CDN libraries (loaded on demand, not at page load) ---
+const CDN = {
+    chart: 'https://cdn.jsdelivr.net/npm/chart.js',
+    leafletJs: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+    leafletCss: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+};
+const _scriptPromises = {};
+
+// Inject a <script defer> once; resolves when loaded. Memoised per src.
+function loadScript(src) {
+    if (_scriptPromises[src]) return _scriptPromises[src];
+    _scriptPromises[src] = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.defer = true;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.appendChild(s);
+    });
+    return _scriptPromises[src];
+}
+
+// Chart.js: only needed once the user opens "més estadístiques".
+const loadChartJs = () => loadScript(CDN.chart);
+
+// Leaflet: CSS + JS, loaded the first time the map scrolls into view.
+let _leafletPromise = null;
+function loadLeaflet() {
+    if (_leafletPromise) return _leafletPromise;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = CDN.leafletCss;
+    document.head.appendChild(link);
+    _leafletPromise = loadScript(CDN.leafletJs);
+    return _leafletPromise;
+}
+
+// Local synced copy of the data (committed to the repo by the GitHub Action),
+// served same-origin — the primary source, with the live Sheet as fallback.
+const LOCAL_DATA_URL = 'data/vies.csv';
+
+// CSV session cache (short TTL) so reloads within the same tab are instant.
+const DATA_TTL_MS = 10 * 60 * 1000;
+const CACHE_KEY = 'viesCSV';
+
+// Reused collator for Catalan text sorting (cheaper than per-call localeCompare).
+const textCollator = new Intl.Collator('ca', { sensitivity: 'base' });
 
 // Columns to search: Nom(1), Grau(2), Agulla/Paret(4), Zona(5)
 const SEARCH_COLUMNS = [1, 2, 4, 5];
@@ -49,14 +96,11 @@ function getThemeColor(variableName, fallback) {
 
 
 async function fetchWithFallback(url) {
-    const cacheBuster = `&t=${Date.now()}`;
-    const urlWithCacheBuster = url + cacheBuster;
-
     // 1) Direct request first. Google's "published to web" CSV now serves
     //    `Access-Control-Allow-Origin: *`, so in practice no proxy is needed.
+    //    Freshness is governed by our sessionStorage TTL, so no cache-buster here.
     try {
-        console.log('Trying direct fetch...');
-        const direct = await fetch(urlWithCacheBuster, { cache: "no-store" });
+        const direct = await fetch(url);
         if (direct.ok) return await direct.text();
     } catch (err) {
         console.warn('Direct fetch failed, falling back to CORS proxies...');
@@ -65,34 +109,35 @@ async function fetchWithFallback(url) {
     // 2) Fall back to third-party CORS proxies (may be rate-limited or down).
     for (const proxy of PROXIES) {
         try {
-            console.log(`Trying proxy: ${proxy}`);
-            const response = await fetch(`${proxy}${encodeURIComponent(urlWithCacheBuster)}`, { cache: "no-store" });
+            const response = await fetch(`${proxy}${encodeURIComponent(url)}`);
             if (response.ok) return await response.text();
         } catch (err) {
             console.warn(`Proxy ${proxy} failed, trying next...`);
         }
     }
-    throw new Error('No s\'han pogut carregar les dades (ni directament ni via proxies).');
+    throw new Error('Unable to fetch data (direct request and all CORS proxies failed).');
 }
+
+// UIAA/Roman grade values (I–XII) for sorting.
+const ROMAN_GRADES = {
+    I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6,
+    VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12
+};
 
 /**
  * Parse a climbing grade string into a sortable numeric value.
- * Handles formats like: 4, 5+, 6a, 6a+, 6b, 7c+, 8a, etc.
+ * Handles formats like: 4, 5+, 6a, 6a+, 6b, 7c+, 8a, and UIAA (IV, V+, VII).
  */
 function gradeToSortValue(grade) {
     if (!grade || grade === '-') return -1;
     grade = grade.trim().toUpperCase();
 
-    // Handle common Roman numerals for lower grades
-    if (grade.startsWith('IV')) return 400 + (grade.includes('+') ? 50 : 0);
-    if (grade.startsWith('V')) {
-        // Distinguish between V (Roman) and 5? In climbing usually V = 5.
-        // But the case 'V' vs 'V+'
-        return 500 + (grade.includes('+') ? 50 : 0);
+    // UIAA/Roman numerals (I–XII), with optional '+'. Whole-string match so
+    // VI/VII don't collapse onto V (the old startsWith chain returned 500 for all).
+    const romanMatch = grade.match(/^([IVX]+)(\+?)$/);
+    if (romanMatch && ROMAN_GRADES[romanMatch[1]] !== undefined) {
+        return ROMAN_GRADES[romanMatch[1]] * 100 + (romanMatch[2] ? 50 : 0);
     }
-    if (grade.startsWith('III')) return 300 + (grade.includes('+') ? 50 : 0);
-    if (grade.startsWith('II')) return 200 + (grade.includes('+') ? 50 : 0);
-    if (grade.startsWith('I')) return 100 + (grade.includes('+') ? 50 : 0);
 
     // Match patterns like "6A+", "7B", "5+", "4"
     const match = grade.match(/^(\d+)([A-C]?)(\+?)$/i);
@@ -171,7 +216,7 @@ function sortData(columnIndex, direction) {
                 cmp = (parseFloat(valA) || 0) - (parseFloat(valB) || 0);
                 break;
             case 'text':
-                cmp = valA.localeCompare(valB, 'ca', { sensitivity: 'base' });
+                cmp = textCollator.compare(valA, valB);
                 break;
             case 'grade':
                 cmp = gradeToSortValue(valA) - gradeToSortValue(valB);
@@ -188,9 +233,6 @@ function sortData(columnIndex, direction) {
     updateSortIndicators();
 }
 
-/**
- * Calculate and render statistics summary.
- */
 /**
  * Calculate and render statistics summary.
  */
@@ -246,76 +288,53 @@ function renderStats(data) {
 }
 
 /**
- * Render the years frequency chart using Chart.js.
- * Displays a symmetrical centered bar chart per year.
+ * Build a diverging (symmetrically centered) horizontal bar chart with Chart.js.
+ * The three stats charts share identical styling and only differ in their data,
+ * so they all funnel through here once they've computed an ordered {labels, counts}.
+ *
+ * @param {string} canvasId  id of the <canvas> element
+ * @param {string[]} labels  category labels, already in display order
+ * @param {Object} counts    map of label -> count
+ * @returns {Chart|null}     the Chart instance, or null if nothing to draw
  */
-function renderYearsChart(data) {
-    const canvas = document.getElementById('yearsChart');
-    if (!canvas) return;
+function buildDivergingBarChart(canvasId, labels, counts) {
+    if (typeof Chart === 'undefined') return null; // Chart.js not loaded yet
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || labels.length === 0) return null;
 
-    if (yearsChart) {
-        yearsChart.destroy();
-    }
-
-    if (data.length === 0) return;
-
-    // Process data by year
-    const yearsData = {};
-    data.forEach(row => {
-        const dateStr = (row[6] || '').trim();
-        if (!dateStr) return;
-        const match = dateStr.match(/(19|20)\d{2}/);
-        if (match) {
-            const year = match[0];
-            yearsData[year] = (yearsData[year] || 0) + 1;
-        }
-    });
-
-    // Sort years chronologically
-    const sortedLabels = Object.keys(yearsData).sort();
-
-    const labels = sortedLabels;
-    const halfData = sortedLabels.map(y => yearsData[y] / 2);
+    const halfData = labels.map(l => counts[l] / 2);
     const leftData = halfData.map(v => -v);
     const rightData = halfData;
+    const maxVal = Math.max(...labels.map(l => counts[l]));
+
+    // Read theme colours once (each getThemeColor call forces a style recalc).
+    const accent = getThemeColor('--accent', '#2563EB');
+    const muted = getThemeColor('--muted', '#6B7280');
+    const ink = getThemeColor('--ink', '#111317');
+    const surface = getThemeColor('--surface', '#ffffff');
 
     const ctx = canvas.getContext('2d');
+    // Dynamic height: ~30px per row + 120px for labels/title.
+    canvas.parentElement.style.height = `${labels.length * 30 + 120}px`;
 
-    // Dynamic height calculation: ~30px per row + 120px for labels/title
-    const chartHeight = (labels.length * 30) + 120;
-    canvas.parentElement.style.height = `${chartHeight}px`;
+    const dataset = (data, side) => ({
+        label: side,
+        data,
+        backgroundColor: accent,
+        borderColor: accent,
+        borderWidth: 0,
+        borderRadius: side === 'left'
+            ? { topLeft: 4, bottomLeft: 4 }
+            : { topRight: 4, bottomRight: 4 },
+        barPercentage: 0.96,
+        categoryPercentage: 0.96,
+        barThickness: 18,
+        maxBarThickness: 18
+    });
 
-    yearsChart = new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Esquerra',
-                    data: leftData,
-                    backgroundColor: getThemeColor('--accent', '#2563EB'),
-                    borderColor: getThemeColor('--accent', '#2563EB'),
-                    borderWidth: 0,
-                    borderRadius: { topLeft: 4, bottomLeft: 4 },
-                    barPercentage: 0.96,
-                    categoryPercentage: 0.96,
-                    barThickness: 18,
-                    maxBarThickness: 18
-                },
-                {
-                    label: 'Dreta',
-                    data: rightData,
-                    backgroundColor: getThemeColor('--accent', '#2563EB'),
-                    borderColor: getThemeColor('--accent', '#2563EB'),
-                    borderWidth: 0,
-                    borderRadius: { topRight: 4, bottomRight: 4 },
-                    barPercentage: 0.96,
-                    categoryPercentage: 0.96,
-                    barThickness: 18,
-                    maxBarThickness: 18
-                }
-            ]
-        },
+        data: { labels, datasets: [dataset(leftData, 'left'), dataset(rightData, 'right')] },
         options: {
             indexAxis: 'y',
             responsive: true,
@@ -324,12 +343,12 @@ function renderYearsChart(data) {
                 x: {
                     stacked: true,
                     display: true,
-                    min: -Math.max(...Object.values(yearsData)) / 2 * 1.2,
-                    max: Math.max(...Object.values(yearsData)) / 2 * 1.2,
+                    min: -maxVal / 2 * 1.2,
+                    max: maxVal / 2 * 1.2,
                     ticks: { display: false },
                     grid: {
                         drawOnChartArea: true,
-                        color: (context) => context.tick.value === 0 ? getThemeColor('--muted', '#cbd5e1') : 'transparent',
+                        color: (context) => context.tick.value === 0 ? muted : 'transparent',
                         lineWidth: (context) => context.tick.value === 0 ? 2 : 0,
                         drawTicks: false
                     }
@@ -337,7 +356,7 @@ function renderYearsChart(data) {
                 y: {
                     stacked: true,
                     ticks: {
-                        color: getThemeColor('--muted', '#6B7280'),
+                        color: muted,
                         font: { family: 'Lexend, sans-serif', size: 13, weight: '500' },
                         padding: 10
                     },
@@ -347,14 +366,11 @@ function renderYearsChart(data) {
             plugins: {
                 tooltip: {
                     callbacks: {
-                        label: function (context) {
-                            const val = Math.abs(context.parsed.x) * 2;
-                            return ` Vies: ${val}`;
-                        }
+                        label: (context) => ` Vies: ${Math.abs(context.parsed.x) * 2}`
                     },
-                    backgroundColor: getThemeColor('--ink', '#111317'),
-                    bodyColor: getThemeColor('--surface', '#ffffff'),
-                    titleColor: getThemeColor('--surface', '#ffffff'),
+                    backgroundColor: ink,
+                    bodyColor: surface,
+                    titleColor: surface,
                     padding: 12,
                     cornerRadius: 8,
                     displayColors: false
@@ -369,11 +385,27 @@ function renderYearsChart(data) {
 }
 
 /**
- * Render the zones frequency chart using Chart.js.
- * Displays a diverging stacked bar chart: Easy (negative) vs Hard (positive).
+ * Render the years frequency chart: count routes per year, ordered chronologically.
  */
+function renderYearsChart(data) {
+    if (yearsChart) {
+        yearsChart.destroy();
+        yearsChart = null;
+    }
+    if (data.length === 0) return;
+
+    const counts = {};
+    data.forEach(row => {
+        const m = (row[6] || '').trim().match(/(19|20)\d{2}/);
+        if (m) counts[m[0]] = (counts[m[0]] || 0) + 1;
+    });
+    const labels = Object.keys(counts).sort();
+
+    yearsChart = buildDivergingBarChart('yearsChart', labels, counts);
+}
+
 /**
- * Helper to clean and normalize climbing grades for the chart.
+ * Clean and normalize a climbing grade for the grades chart.
  * Removes artificial climbing notations (A1, A2, Ae, etc.) and handles splits (6a/b -> 6a).
  */
 function cleanGrade(rawGrau) {
@@ -405,266 +437,58 @@ function cleanGrade(rawGrau) {
     return null; // Not a standard free climbing grade
 }
 
+/**
+ * Render the grades frequency chart: count routes per (cleaned) grade,
+ * ordered by climbing difficulty.
+ */
 function renderChart(data) {
-    const canvas = document.getElementById('zonesChart');
-    if (!canvas) return;
-
     if (zonesChart) {
         zonesChart.destroy();
+        zonesChart = null;
     }
-
     if (data.length === 0) return;
 
-    // Process data by grade
-    const gradesData = {};
+    const counts = {};
     data.forEach(row => {
-        const rawGrau = (row[2] || '').trim();
-        if (!rawGrau || rawGrau === '-') return;
-
-        const grau = cleanGrade(rawGrau);
+        const grau = cleanGrade((row[2] || '').trim());
         if (!grau) return; // Skip if it's not a free climbing grade (UIAA/French)
-
-        if (!gradesData[grau]) {
-            gradesData[grau] = 0;
-        }
-        gradesData[grau]++;
+        counts[grau] = (counts[grau] || 0) + 1;
     });
+    const labels = Object.keys(counts).sort((a, b) => gradeToSortValue(a) - gradeToSortValue(b));
 
-    // Sort grades logically using the existing global gradeToSortValue helper
-    const sortedLabels = Object.keys(gradesData)
-        .sort((a, b) => gradeToSortValue(a) - gradeToSortValue(b));
-
-    const labels = sortedLabels;
-    // Symmetrical centering: half left, half right
-    const halfData = sortedLabels.map(g => gradesData[g] / 2);
-    const leftData = halfData.map(v => -v);
-    const rightData = halfData;
-
-    const ctx = canvas.getContext('2d');
-
-    // Dynamic height calculation: ~30px per row + 120px for labels/title
-    const chartHeight = (labels.length * 30) + 120;
-    canvas.parentElement.style.height = `${chartHeight}px`;
-
-    zonesChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Esquerra',
-                    data: leftData,
-                    backgroundColor: getThemeColor('--accent', '#2563EB'), // Solid blog blue
-                    borderColor: getThemeColor('--accent', '#2563EB'),
-                    borderWidth: 0,
-                    borderRadius: { topLeft: 4, bottomLeft: 4 },
-                    barPercentage: 0.96,
-                    categoryPercentage: 0.96,
-                    barThickness: 18,
-                    maxBarThickness: 18
-                },
-                {
-                    label: 'Dreta',
-                    data: rightData,
-                    backgroundColor: getThemeColor('--accent', '#2563EB'), // Solid blog blue
-                    borderColor: getThemeColor('--accent', '#2563EB'),
-                    borderWidth: 0,
-                    borderRadius: { topRight: 4, bottomRight: 4 },
-                    barPercentage: 0.96,
-                    categoryPercentage: 0.96,
-                    barThickness: 18,
-                    maxBarThickness: 18
-                }
-            ]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    stacked: true,
-                    display: true,
-                    min: -Math.max(...Object.values(gradesData)) / 2 * 1.2,
-                    max: Math.max(...Object.values(gradesData)) / 2 * 1.2,
-                    ticks: { display: false },
-                    grid: {
-                        drawOnChartArea: true,
-                        color: (context) => context.tick.value === 0 ? getThemeColor('--muted', '#cbd5e1') : 'transparent',
-                        lineWidth: (context) => context.tick.value === 0 ? 2 : 0,
-                        drawTicks: false
-                    }
-                },
-                y: {
-                    stacked: true,
-                    ticks: {
-                        color: getThemeColor('--muted', '#6B7280'),
-                        font: { family: 'Lexend, sans-serif', size: 13, weight: '500' },
-                        padding: 10
-                    },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const val = Math.abs(context.parsed.x) * 2;
-                            return ` Vies: ${val}`;
-                        }
-                    },
-                    backgroundColor: getThemeColor('--ink', '#111317'),
-                    bodyColor: getThemeColor('--surface', '#ffffff'),
-                    titleColor: getThemeColor('--surface', '#ffffff'),
-                    padding: 12,
-                    cornerRadius: 8,
-                    displayColors: false
-                },
-                legend: { display: false }
-            },
-            layout: {
-                padding: { left: 10, right: 30, top: 10, bottom: 35 }
-            }
-        }
-    });
+    zonesChart = buildDivergingBarChart('zonesChart', labels, counts);
 }
 
 /**
  * Render the seasons frequency chart.
  */
 function renderSeasonsChart(data) {
-    const canvas = document.getElementById('seasonsChart');
-    if (!canvas) return;
-
     if (seasonsChart) {
         seasonsChart.destroy();
+        seasonsChart = null;
     }
-
     if (data.length === 0) return;
 
-    // Seasons mapping: Hivern (12, 1, 2), Primavera (3, 4, 5), Estiu (6, 7, 8), Tardor (9, 10, 11)
-    const seasonCounts = {
-        'hivern': 0,
-        'primavera': 0,
-        'estiu': 0,
-        'tardor': 0
-    };
+    // Seasons mapping: hivern (12,1,2), primavera (3-5), estiu (6-8), tardor (9-11).
+    const counts = { hivern: 0, primavera: 0, estiu: 0, tardor: 0 };
 
     data.forEach(row => {
         const dateStr = (row[6] || '').trim();
         if (!dateStr || dateStr === '-') return;
 
-        let month = -1;
-        if (dateStr.includes('/')) {
-            const parts = dateStr.split('/');
-            if (parts.length >= 2) month = parseInt(parts[1]);
-        } else if (dateStr.includes('-')) {
-            const parts = dateStr.split('-');
-            if (parts.length >= 2) {
-                // If it starts with 4 digits, it's YYYY-MM...
-                if (parts[0].length === 4) month = parseInt(parts[1]);
-                else month = parseInt(parts[1]); // Assuming DD-MM-YYYY
-            }
-        }
+        // Month is the 2nd field for both DD/MM/YYYY and YYYY-MM[-DD].
+        const parts = dateStr.split(/[\/-]/);
+        const month = parts.length >= 2 ? parseInt(parts[1], 10) : NaN;
+        if (isNaN(month)) return;
 
-        if (month !== -1 && !isNaN(month)) {
-            if (month === 12 || month === 1 || month === 2) seasonCounts['hivern']++;
-            else if (month >= 3 && month <= 5) seasonCounts['primavera']++;
-            else if (month >= 6 && month <= 8) seasonCounts['estiu']++;
-            else if (month >= 9 && month <= 11) seasonCounts['tardor']++;
-        }
+        if (month === 12 || month === 1 || month === 2) counts.hivern++;
+        else if (month >= 3 && month <= 5) counts.primavera++;
+        else if (month >= 6 && month <= 8) counts.estiu++;
+        else if (month >= 9 && month <= 11) counts.tardor++;
     });
 
-    const labels = ["hivern", "primavera", "estiu", "tardor"];
-    const halfData = labels.map(s => seasonCounts[s] / 2);
-    const leftData = halfData.map(v => -v);
-    const rightData = halfData;
-
-    const ctx = canvas.getContext('2d');
-    const chartHeight = (labels.length * 30) + 120;
-    canvas.parentElement.style.height = `${chartHeight}px`;
-
-    seasonsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Esquerra',
-                    data: leftData,
-                    backgroundColor: getThemeColor('--accent', '#2563EB'),
-                    borderColor: getThemeColor('--accent', '#2563EB'),
-                    borderWidth: 0,
-                    borderRadius: { topLeft: 4, bottomLeft: 4 },
-                    barPercentage: 0.96,
-                    categoryPercentage: 0.96,
-                    barThickness: 18,
-                    maxBarThickness: 18
-                },
-                {
-                    label: 'Dreta',
-                    data: rightData,
-                    backgroundColor: getThemeColor('--accent', '#2563EB'),
-                    borderColor: getThemeColor('--accent', '#2563EB'),
-                    borderWidth: 0,
-                    borderRadius: { topRight: 4, bottomRight: 4 },
-                    barPercentage: 0.96,
-                    categoryPercentage: 0.96,
-                    barThickness: 18,
-                    maxBarThickness: 18
-                }
-            ]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    stacked: true,
-                    display: true,
-                    min: -Math.max(...Object.values(seasonCounts)) / 2 * 1.2,
-                    max: Math.max(...Object.values(seasonCounts)) / 2 * 1.2,
-                    ticks: { display: false },
-                    grid: {
-                        drawOnChartArea: true,
-                        color: (context) => context.tick.value === 0 ? getThemeColor('--muted', '#cbd5e1') : 'transparent',
-                        lineWidth: (context) => context.tick.value === 0 ? 2 : 0,
-                        drawTicks: false
-                    }
-                },
-                y: {
-                    stacked: true,
-                    ticks: {
-                        color: getThemeColor('--muted', '#6B7280'),
-                        font: { family: 'Lexend, sans-serif', size: 13, weight: '500' },
-                        padding: 10
-                    },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const val = Math.abs(context.parsed.x) * 2;
-                            return ` Vies: ${val}`;
-                        }
-                    },
-                    backgroundColor: getThemeColor('--ink', '#111317'),
-                    bodyColor: getThemeColor('--surface', '#ffffff'),
-                    titleColor: getThemeColor('--surface', '#ffffff'),
-                    padding: 12,
-                    cornerRadius: 8,
-                    displayColors: false
-                },
-                legend: { display: false }
-            },
-            layout: {
-                padding: { left: 10, right: 30, top: 10, bottom: 35 }
-            }
-        }
-    });
+    const labels = ['hivern', 'primavera', 'estiu', 'tardor'];
+    seasonsChart = buildDivergingBarChart('seasonsChart', labels, counts);
 }
 function renderTable() {
     const tableBody = document.getElementById('vies-body');
@@ -672,10 +496,18 @@ function renderTable() {
 
     const dataToRender = getFilteredData();
     renderStats(dataToRender);
-    renderYearsChart(dataToRender);
-    renderChart(dataToRender);
-    renderSeasonsChart(dataToRender);
+    // The charts are costly to rebuild; only do it while the stats section is
+    // actually visible. When it's collapsed, setupStatsToggle() renders them on open.
+    const extra = document.getElementById('extra-stats-container');
+    if (extra && !extra.classList.contains('hidden')) {
+        renderYearsChart(dataToRender);
+        renderChart(dataToRender);
+        renderSeasonsChart(dataToRender);
+    }
     updateMapMarkers(dataToRender);
+
+    // Build all rows in a fragment and insert once (avoids per-row reflows).
+    const fragment = document.createDocumentFragment();
 
     dataToRender.forEach(row => {
         if (row.length < 2) return;
@@ -752,8 +584,17 @@ function renderTable() {
             }
         });
 
-        tableBody.appendChild(tr);
+        // Trailing empty cell under the header's refresh column, so the row's
+        // bottom border runs the full width (no gap on the right).
+        const fillTd = document.createElement('td');
+        fillTd.className = 'refresh-col';
+        fillTd.setAttribute('aria-hidden', 'true');
+        tr.appendChild(fillTd);
+
+        fragment.appendChild(tr);
     });
+
+    tableBody.appendChild(fragment);
 }
 
 /**
@@ -784,14 +625,6 @@ function initMap() {
         console.error('Leaflet library (L) is not loaded.');
         return;
     }
-
-    // Fix for Leaflet default marker icons not showing when using CDN
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    });
 
     // Base Layer 1: Standard OpenStreetMap (Clean and fast for low zoom)
     const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -866,7 +699,7 @@ function updateMapMarkers(data) {
                             <div class="popup-row"><strong>Lloc:</strong> ${paret}</div>
                             <div class="popup-zone">${zone}</div>
                             <div class="popup-footer">
-                                <i class="fa-regular fa-calendar"></i> ${dataObra}
+                                <svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg> ${dataObra}
                             </div>
                         </div>
                     </div>
@@ -911,9 +744,7 @@ function buildMapCell(mapUrl) {
         a.rel = 'noopener noreferrer';
         a.title = 'Veure ubicació al mapa';
         a.className = 'map-link';
-        const icon = document.createElement('i');
-        icon.className = 'fa-solid fa-location-dot';
-        a.appendChild(icon);
+        a.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-location-dot"></use></svg>';
         td.appendChild(a);
     }
     return td;
@@ -924,12 +755,13 @@ function buildMapCell(mapUrl) {
  */
 function updateSortIndicators() {
     const headers = document.querySelectorAll('#vies-table thead th');
-    headers.forEach((th, index) => {
+    headers.forEach((th) => {
         // Remove existing indicator
         const existingArrow = th.querySelector('.sort-arrow');
         if (existingArrow) existingArrow.remove();
 
-        if (index === currentSort.column && COLUMN_TYPES[index] !== 'none') {
+        const col = th.dataset.col;
+        if (col !== undefined && parseInt(col, 10) === currentSort.column) {
             const arrow = document.createElement('span');
             arrow.className = 'sort-arrow';
             arrow.textContent = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
@@ -942,16 +774,29 @@ function updateSortIndicators() {
  * Set up click handlers on desktop table headers for sorting.
  */
 function setupDesktopSortHandlers() {
-    const headers = document.querySelectorAll('#vies-table thead th');
-    headers.forEach((th, index) => {
+    // Each sortable <th> declares the DATA column it maps to via data-col.
+    // (The header has an extra, non-data column for the map/refresh icon, so
+    // header position != data index — data-col keeps them aligned.)
+    const headers = document.querySelectorAll('#vies-table thead th[data-col]');
+    headers.forEach((th) => {
+        const index = parseInt(th.dataset.col, 10);
         if (COLUMN_TYPES[index] === 'none') return;
 
         th.classList.add('sortable');
+        // Keyboard accessibility: make the header focusable and activatable.
+        th.setAttribute('tabindex', '0');
+        th.setAttribute('role', 'button');
         th.addEventListener('click', () => {
             const newDirection = (currentSort.column === index && currentSort.direction === 'asc') ? 'desc' : 'asc';
             sortData(index, newDirection);
             // Sync mobile dropdown if a matching option exists
             syncMobileDropdown(index, newDirection);
+        });
+        th.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                th.click();
+            }
         });
     });
 }
@@ -989,9 +834,11 @@ function setupSearchHandler() {
     const input = document.getElementById('search-input');
     if (!input) return;
 
+    let debounce;
     input.addEventListener('input', () => {
         searchQuery = input.value;
-        renderTable();
+        clearTimeout(debounce);
+        debounce = setTimeout(renderTable, 150);
     });
 }
 
@@ -1015,12 +862,88 @@ function setupSearchToggle() {
     });
 }
 
+/**
+ * Get the vies CSV: local synced copy first (same-origin, fast, no CORS),
+ * then the live Google Sheet (direct, then proxies) as a fallback.
+ */
+async function fetchViesCsv() {
+    try {
+        const res = await fetch(LOCAL_DATA_URL);
+        if (res.ok) {
+            const text = await res.text();
+            if (text && text.trim()) return text;
+        }
+    } catch (e) { /* not present (e.g. local dev) — fall through to the live Sheet */ }
+    return fetchWithFallback(SHEET_URL);
+}
+
+/** Read the cached CSV from sessionStorage if it's still within the TTL. */
+function readCachedCsv() {
+    try {
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { ts, csv } = JSON.parse(raw);
+        if (typeof csv === 'string' && Date.now() - ts < DATA_TTL_MS) return csv;
+    } catch (e) { /* storage unavailable / corrupt: ignore */ }
+    return null;
+}
+
+/** Persist the CSV with a timestamp (best-effort; ignores private-mode/quota errors). */
+function writeCachedCsv(csv) {
+    try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), csv }));
+    } catch (e) { /* ignore */ }
+}
+
+/**
+ * Force a live reload from the Google Sheet, bypassing the local copy and the
+ * session cache. Used by the discreet refresh button.
+ */
+async function forceRefresh() {
+    const buttons = document.querySelectorAll('.js-refresh');
+    const icons = document.querySelectorAll('.js-refresh .icon');
+    buttons.forEach(b => b.disabled = true);
+    icons.forEach(i => i.classList.add('spinning'));
+
+    try {
+        const csv = await fetchWithFallback(SHEET_URL); // skip local copy + cache
+        const data = parseCSV(csv);
+        data.shift(); // drop header row
+        viesData = data;
+        writeCachedCsv(csv); // keep the cache fresh too
+        sortData(currentSort.column, currentSort.direction); // re-render, keep order
+    } catch (err) {
+        console.error('Manual refresh failed:', err);
+        const errorElem = document.getElementById('error');
+        if (errorElem) {
+            errorElem.textContent = 'Live refresh from the Sheet failed. Please try again.';
+            errorElem.style.display = 'block';
+            setTimeout(() => { errorElem.style.display = 'none'; }, 4000);
+        }
+    } finally {
+        icons.forEach(i => i.classList.remove('spinning'));
+        buttons.forEach(b => b.disabled = false);
+    }
+}
+
+/** Wire the discreet refresh button(s) to forceRefresh(). */
+function setupRefresh() {
+    document.querySelectorAll('.js-refresh').forEach(btn => {
+        btn.addEventListener('click', forceRefresh);
+    });
+}
+
 async function fetchAndRenderVies() {
     const loadingElem = document.getElementById('loading');
     const errorElem = document.getElementById('error');
 
     try {
-        const csvText = await fetchWithFallback(SHEET_URL);
+        // Serve from the short-lived session cache when fresh; else fetch + store.
+        let csvText = readCachedCsv();
+        if (csvText === null) {
+            csvText = await fetchViesCsv();
+            writeCachedCsv(csvText);
+        }
         const data = parseCSV(csvText);
 
         // Remove header row
@@ -1048,17 +971,23 @@ async function fetchAndRenderVies() {
         // Opening the file directly (file://) blocks all remote fetches in the browser,
         // so no data can ever load that way. Give a clear, actionable message.
         if (location.protocol === 'file:') {
-            errorElem.innerHTML = 'Has obert la pàgina com a fitxer local (<code>file://</code>), '
-                + 'i el navegador no permet carregar dades remotes així.<br>'
-                + 'Cal servir-la per HTTP, p. ex.: <code>python -m http.server</code> '
-                + 'i obrir <code>http://localhost:8000</code> (o publicar-la en un hosting).';
+            errorElem.innerHTML = 'Page loaded over the file:// protocol; the browser blocks '
+                + 'cross-origin data requests in this context.<br>'
+                + 'Serve the application over HTTP instead '
+                + '(e.g. python -m http.server, then open http://localhost:8000) '
+                + 'or deploy it to a web host.';
+        } else {
+            errorElem.innerHTML = 'Failed to fetch route data (direct request and CORS proxies '
+                + 'both unavailable). Check network connectivity and the data '
+                + 'source endpoint, then reload.';
         }
         errorElem.style.display = 'block';
     }
 }
 
 /**
- * Robust CSV parser that handles quoted fields with commas.
+ * Wire up the "més estadístiques" toggle: show/hide the charts section,
+ * swap the chevron, and render the charts the first time they become visible.
  */
 function setupStatsToggle() {
     const btn = document.getElementById('toggle-stats-btn');
@@ -1066,21 +995,29 @@ function setupStatsToggle() {
 
     if (!btn || !container) return;
 
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
         container.classList.toggle('hidden');
         btn.classList.toggle('active');
 
         // Update text
         if (container.classList.contains('hidden')) {
-            btn.innerHTML = 'més estadístiques <i class="fa-solid fa-chevron-down"></i>';
+            btn.innerHTML = 'més estadístiques <svg class="icon" aria-hidden="true"><use href="#i-chevron-down"></use></svg>';
         } else {
-            btn.innerHTML = 'menys estadístiques <i class="fa-solid fa-chevron-up"></i>';
-            // Force charts to render if they were hidden when called
-            refreshCharts();
+            btn.innerHTML = 'menys estadístiques <svg class="icon" aria-hidden="true"><use href="#i-chevron-up"></use></svg>';
+            // Lazy-load Chart.js the first time, then render the charts.
+            try {
+                await loadChartJs();
+                refreshCharts();
+            } catch (err) {
+                console.error(err);
+            }
         }
     });
 }
 
+/**
+ * Robust CSV parser that handles quoted fields with commas.
+ */
 function parseCSV(text) {
     const lines = text.split(/\r?\n/);
     const result = [];
@@ -1121,9 +1058,10 @@ function parseCSV(text) {
  * Shared by the stats toggle and the theme switch (so colours follow the theme).
  */
 function refreshCharts() {
-    renderYearsChart(getFilteredData());
-    renderChart(getFilteredData());
-    renderSeasonsChart(getFilteredData());
+    const data = getFilteredData();
+    renderYearsChart(data);
+    renderChart(data);
+    renderSeasonsChart(data);
     if (yearsChart) yearsChart.resize();
     if (zonesChart) zonesChart.resize();
     if (seasonsChart) seasonsChart.resize();
@@ -1134,9 +1072,9 @@ function refreshCharts() {
  */
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    const icon = document.querySelector('#theme-toggle i');
-    if (icon) {
-        icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const use = document.querySelector('#theme-toggle .icon use');
+    if (use) {
+        use.setAttribute('href', theme === 'dark' ? '#i-sun' : '#i-moon');
     }
 }
 
@@ -1145,8 +1083,18 @@ function applyTheme(theme) {
  */
 function setupThemeToggle() {
     const stored = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(stored || (prefersDark ? 'dark' : 'light'));
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    applyTheme(stored || (mq && mq.matches ? 'dark' : 'light'));
+
+    // If the user hasn't chosen explicitly, follow live OS theme changes.
+    if (!stored && mq) {
+        mq.addEventListener('change', (e) => {
+            if (localStorage.getItem('theme')) return; // user chose meanwhile
+            applyTheme(e.matches ? 'dark' : 'light');
+            const extra = document.getElementById('extra-stats-container');
+            if (extra && !extra.classList.contains('hidden')) refreshCharts();
+        });
+    }
 
     const btn = document.getElementById('theme-toggle');
     if (!btn) return;
@@ -1163,10 +1111,43 @@ function setupThemeToggle() {
     });
 }
 
+/**
+ * Lazily load Leaflet and initialise the map the first time #map-container
+ * scrolls near the viewport, then populate it with the current data.
+ */
+function setupLazyMap() {
+    const target = document.getElementById('map-container');
+    if (!target) return;
+
+    const init = async () => {
+        try {
+            await loadLeaflet();
+            initMap();
+            updateMapMarkers(getFilteredData());
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    if (!('IntersectionObserver' in window)) {
+        init(); // Fallback: just load it.
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries.some(e => e.isIntersecting)) {
+            observer.disconnect();
+            init();
+        }
+    }, { rootMargin: '200px' });
+    observer.observe(target);
+}
+
 // Start fetching when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     setupThemeToggle(); // Apply theme before anything renders
-    initMap(); // Init map immediately
+    setupLazyMap();     // Map (Leaflet) loads when it scrolls into view
+    setupRefresh();     // Discreet "refresh from Sheet" button
     fetchAndRenderVies();
 
     // Set dynamic year

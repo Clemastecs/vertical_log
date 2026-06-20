@@ -92,6 +92,64 @@ body {
     outline-offset: 2px;
 }
 
+/* Icones SVG inline (sprite a index.html): hereten color i mida del text */
+.icon {
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    vertical-align: -0.125em;
+}
+
+/* Botó discret de refresc manual (carrega les dades en viu del full) */
+.refresh-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px;
+    font-size: 1.1rem;
+    line-height: 0;
+    transition: color 0.15s ease;
+}
+
+.refresh-btn:hover {
+    color: var(--accent);
+}
+
+.refresh-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.refresh-btn .icon.spinning {
+    animation: spin 0.8s linear infinite;
+    transform-origin: center;
+}
+
+/* Botó de refresc integrat a la capçalera de la taula */
+th.refresh-col {
+    text-align: center;
+    padding: 4px;
+    width: 42px;
+}
+
+th.refresh-col .refresh-btn {
+    color: var(--header-text);
+    opacity: 0.65;
+}
+
+th.refresh-col .refresh-btn:hover {
+    color: var(--header-text);
+    opacity: 1;
+}
+
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Lexend', sans-serif;
     font-weight: 800;
@@ -154,13 +212,13 @@ header .subtitle {
 /* Removed follow-us span styles as the span was removed */
 
 .follow-us a {
-    background: var(--neo-black);
-    color: var(--neo-white);
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-cyan);
+    background: var(--ink);
+    color: var(--surface);
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
     padding: 8px;
     font-size: 1.2rem;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -168,10 +226,8 @@ header .subtitle {
 }
 
 .follow-us a:hover {
-    background: var(--neo-white);
-    color: var(--neo-black);
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--neo-pink);
+    box-shadow: var(--sh-md) var(--shadow-hover);
     text-decoration: none;
 }
 
@@ -185,6 +241,10 @@ header .subtitle {
     color: var(--danger);
 }
 
+.mono {
+    font-family: ui-monospace, SFMono-Regular, 'Courier New', monospace;
+}
+
 .search-wrapper {
     margin-bottom: 20px;
     display: flex;
@@ -192,13 +252,13 @@ header .subtitle {
 }
 
 .icon-btn {
-    background: var(--neo-black);
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-cyan);
-    padding: 12px 16px;
-    color: var(--neo-white);
+    background: var(--ink);
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
+    padding: 8px;
+    color: var(--surface);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     font-size: 1.2rem;
     display: flex;
     align-items: center;
@@ -206,10 +266,8 @@ header .subtitle {
 }
 
 .icon-btn:hover {
-    background: var(--neo-white);
-    color: var(--neo-black);
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--neo-pink);
+    box-shadow: var(--sh-md) var(--shadow-hover);
 }
 
 .search-wrapper input {
@@ -258,7 +316,7 @@ header .subtitle {
     padding: 10px;
     background: transparent;
     border: none;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -297,26 +355,24 @@ header .subtitle {
 }
 
 .btn-more-stats {
-    background: var(--neo-black);
-    color: var(--neo-white);
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-cyan);
-    padding: 12px 24px;
+    background: var(--ink);
+    color: var(--surface);
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
+    padding: 7px 14px;
     font-family: 'Lexend', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 800;
+    font-size: 0.82rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .btn-more-stats:hover {
-    background: var(--neo-white);
-    color: var(--neo-black);
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--neo-pink);
+    box-shadow: var(--sh-md) var(--shadow-hover);
 }
 
 .btn-more-stats i {
@@ -376,16 +432,14 @@ header .subtitle {
     height: 20px !important;
     border-radius: 50%;
     border: var(--bd-thick) solid var(--ink);
-    box-shadow: var(--sh-sm) var(--ink);
     background-color: var(--accent);
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
 .marker-neo:hover,
 .marker-neo.marker-active {
     background-color: var(--accent-2) !important;
     transform: scale(1.3);
-    box-shadow: var(--sh-md) var(--ink);
 }
 
 /* Popups Neobrutalistes */
@@ -604,24 +658,22 @@ td[data-label="Data"] {
 }
 
 td:last-child a {
-    background: var(--neo-black);
-    color: var(--neo-white);
+    background: var(--ink);
+    color: var(--surface);
     text-decoration: none;
     font-family: 'Lexend', sans-serif;
-    font-weight: 800;
-    font-size: 0.8rem;
-    padding: 8px 16px;
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-cyan);
-    transition: all 0.15s ease;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     display: inline-block;
 }
 
 td:last-child a:hover {
-    background: var(--neo-white);
-    color: var(--neo-black);
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--neo-pink);
+    box-shadow: var(--sh-md) var(--shadow-hover);
     text-decoration: none;
 }
 
@@ -636,21 +688,19 @@ td:last-child a:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--neo-white);
-    background: var(--neo-black);
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-cyan);
-    padding: 8px;
-    font-size: 1.25rem;
-    transition: all 0.15s ease;
+    color: var(--surface);
+    background: var(--ink);
+    border: var(--bd) solid var(--ink);
+    box-shadow: var(--sh-md) var(--shadow);
+    padding: 6px;
+    font-size: 1.05rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     text-decoration: none;
 }
 
 .map-link:hover {
-    background: var(--neo-white);
-    color: var(--neo-black);
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--neo-pink);
+    box-shadow: var(--sh-md) var(--shadow-hover);
 }
 
 footer {
@@ -665,22 +715,17 @@ footer {
 }
 
 footer a {
-    background: var(--neo-black);
-    color: var(--neo-white);
+    color: var(--ink);
     text-decoration: none;
-    padding: 12px 24px;
     font-weight: 800;
-    border: 2px solid var(--neo-black);
-    box-shadow: 4px 4px 0px var(--neo-cyan);
-    transition: all 0.15s ease;
+    text-shadow: 1px 1px 0px var(--accent);
+    transition: color 0.15s ease, text-shadow 0.15s ease;
     display: inline-block;
 }
 
 footer a:hover {
-    background: var(--neo-white);
-    color: var(--neo-black);
-    transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--neo-pink);
+    color: var(--accent);
+    text-shadow: 1px 1px 0px var(--shadow-hover);
 }
 
 /* Mobile Card Styles */
@@ -906,10 +951,7 @@ footer a:hover {
     }
 
     table td[data-label="Enllaç"] a {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--link-color);
-        text-decoration: underline;
+        font-size: 0.8rem;
     }
 
     /* Clear default labels */

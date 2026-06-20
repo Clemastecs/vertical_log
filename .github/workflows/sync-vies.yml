@@ -1,0 +1,55 @@
+name: Sync vies data
+
+# Keeps a versioned copy of the climbing-routes CSV in the repo (data/vies.csv),
+# fetched from the published Google Sheet. The website reads this local copy first
+# (fast, same-origin), so the live Sheet/CORS proxies are only a fallback.
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'   # weekly, Mondays at 05:00 UTC
+  workflow_dispatch:        # manual run from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-vies
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch CSV from Google Sheet
+        env:
+          SHEET_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7K0lF7k4iZ1OSbuavBjG47LES1A-FpnnqUOlqzVfGlRTI-ZQrkR6C-3tFUyPAOg065EBgxFzotBKt/pub?output=csv'
+        run: |
+          mkdir -p data
+          curl -fsSL "$SHEET_URL" -o data/vies.csv
+
+      - name: Sanity check the download
+        run: |
+          # Abort (without committing) if the file looks broken or is an error page.
+          if [ ! -s data/vies.csv ]; then
+            echo "::error::Downloaded CSV is empty."; exit 1
+          fi
+          if head -c 64 data/vies.csv | grep -qiE '<!doctype|<html'; then
+            echo "::error::Downloaded file looks like HTML, not CSV."; exit 1
+          fi
+          if [ "$(wc -l < data/vies.csv)" -lt 1 ]; then
+            echo "::error::Downloaded CSV has no data rows."; exit 1
+          fi
+
+      - name: Commit if changed
+        run: |
+          git add data/vies.csv
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(data): sync vies.csv from Google Sheet"
+          git push

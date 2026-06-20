@@ -4,35 +4,54 @@ A lightweight, responsive web application to track and display climbing routes. 
 
 ## 🚀 Features
 
-- **Dynamic Data**: Fetches routes directly from a Google Spreadsheets CSV export.
+- **Synced data**: A weekly GitHub Action mirrors the Google Sheet into the repo; the
+  page reads that local copy first, with the live Sheet (and CORS proxies) as fallback.
 - **Smart Sorting**: 
-  - **Grades**: Special logic to sort climbing grades (e.g., 6a+ > 6a > 5).
+  - **Grades**: Special logic to sort climbing grades, French and UIAA (e.g., 6a+ > 6a > V > IV).
   - **Dates**: Chronological sorting for route completion dates.
-  - **Numeric/Text**: standard sorting for meters, names, and locations.
+  - **Numeric/Text**: standard sorting (Catalan collation) for meters, names, and locations.
 - **Instant Search**: Filter routes by name, grade, wall, or area.
+- **Stats & map**: Charts (Chart.js) and a Leaflet map, both lazy-loaded on demand.
+- **Light / dark mode**: Theme toggle with system-preference detection and persistence.
 - **Responsive Design**: 
   - **Desktop**: Full table view with sortable headers.
   - **Mobile**: Card-style layout for better readability on small screens.
-- **Reliability**: Uses multiple CORS proxies with automatic fallback to ensure data availability.
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+).
-- **Icons**: [Font Awesome](https://fontawesome.com/).
-- **Typography**: [Google Fonts (Roboto)](https://fonts.google.com/).
-- **Data Source**: Google Sheets (via CSV API).
+- **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+) — no build step.
+- **Icons**: inline SVG sprite (paths from Font Awesome Free, CC BY 4.0).
+- **Typography**: [Google Fonts (Lexend)](https://fonts.google.com/specimen/Lexend).
+- **Charts / Map**: [Chart.js](https://www.chartjs.org/) and [Leaflet](https://leafletjs.com/), lazy-loaded from CDN.
+- **Data Source**: Google Sheets (CSV), synced to `data/vies.csv` via GitHub Actions.
 
 ## 📂 Project Structure
 
-- `index.html`: Main structure and UI.
-- `style.css`: Premium responsive design with dark mode aesthetics and glassmorphism.
-- `script.js`: Core logic for fetching, parsing (CSV), sorting, and rendering.
+- `index.html`: Main structure, UI, and the inline SVG icon sprite.
+- `style.css`: Responsive neo-brutalist design with a token-based light/dark theme.
+- `script.js`: Core logic for fetching, parsing (CSV), sorting, rendering, charts, and map.
+- `data/vies.csv`: Synced copy of the route data (updated by the workflow).
+- `.github/workflows/sync-vies.yml`: Scheduled job that refreshes `data/vies.csv`.
+
+## 🔄 Data & synchronization
+
+Routes are edited in a **Google Sheet** (the convenient editing surface). A scheduled
+**GitHub Action** (`.github/workflows/sync-vies.yml`) downloads the published CSV and
+commits it to **`data/vies.csv`** once a week (and on manual trigger). The page reads
+this local copy first (same-origin, fast, no CORS), falling back to the live Sheet if
+it's missing.
+
+- **Manual sync**: GitHub → *Actions* → *Sync vies data* → *Run workflow*.
+- **In-page refresh**: the discreet ⟳ button by the table loads the latest data live
+  from the Sheet, bypassing the local copy and the cache.
 
 ## 🔧 Setup
 
 1. Clone the repository.
-2. Provide your own Google Sheet CSV URL in `script.js` (variable `SHEET_URL`).
-3. Open `index.html` in any modern browser.
+2. Provide your own Google Sheet CSV URL in `script.js` (`SHEET_URL`) and in the
+   workflow (`.github/workflows/sync-vies.yml`).
+3. **Serve over HTTP** (e.g. `python -m http.server`, then open `http://localhost:8000`).
+   Opening `index.html` directly via `file://` makes the browser block the data fetch.
 
 ## ⚖️ License
 
